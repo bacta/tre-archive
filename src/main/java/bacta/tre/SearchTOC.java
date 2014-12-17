@@ -3,7 +3,7 @@ package bacta.tre;
 /**
  * Created by crush on 3/19/14.
  */
-public class SearchTOC extends SearchNode {
+class SearchTOC extends SearchNode {
 
     public class Header {
         int token;

@@ -1,5 +1,6 @@
 package bacta.tre;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -36,7 +37,7 @@ import java.util.Set;
  * }
  * </code>
  */
-public class SearchTree extends SearchNode {
+class SearchTree extends SearchNode {
     private static final int RECORD_SIZE = 24;
 
     private final String filePath;
@@ -58,83 +59,85 @@ public class SearchTree extends SearchNode {
         super(priority);
 
         this.filePath = filePath;
-
-        preprocess();
     }
 
-    private final void preprocess() {
+    public final void preprocess() throws
+            FileNotFoundException,
+            IOException,
+            UnsupportedTreeFileException,
+            UnsupportedTreeFileVersionException {
+
         logger.trace(filePath);
 
-        try {
-            final RandomAccessFile file = new RandomAccessFile(filePath, "r");
-            final FileChannel channel = file.getChannel();
-            final MappedByteBuffer buffer = (MappedByteBuffer) channel.map(
-                    FileChannel.MapMode.READ_ONLY, 0, channel.size()).order(ByteOrder.LITTLE_ENDIAN);
+        final RandomAccessFile file = new RandomAccessFile(filePath, "r");
+        final FileChannel channel = file.getChannel();
+        final MappedByteBuffer buffer = (MappedByteBuffer) channel.map(
+                FileChannel.MapMode.READ_ONLY, 0, channel.size()).order(ByteOrder.LITTLE_ENDIAN);
 
-            channel.close();
-            file.close();
+        channel.close();
+        file.close();
 
-            //Read the file.
-            final int fileId = buffer.getInt();
+        if (buffer.remaining() < 4)
+            throw new UnsupportedTreeFileException(1);
 
-            if (fileId != TreeFile.ID_TREE)
-                throw new Exception("Unknown tree file specifier.");
+        //Read the file.
+        final int fileId = buffer.getInt();
 
-            final int version = buffer.getInt();
+        if (fileId != TreeFile.ID_TREE)
+            throw new UnsupportedTreeFileException(fileId);
 
-            if (version != TreeFile.ID_0005 && version != TreeFile.ID_0006)
-                throw new Exception("Unknown tree file version.");
+        final int version = buffer.getInt();
 
-            final int totalRecords = buffer.getInt();
+        if (version != TreeFile.ID_0005 && version != TreeFile.ID_0006)
+            throw new UnsupportedTreeFileVersionException(version);
 
-            archivedFiles = new HashMap<>(totalRecords);
+        final int totalRecords = buffer.getInt();
 
-            recordsOffset = buffer.getInt();
-            recordsCompressionLevel = buffer.getInt();
-            recordsDeflatedSize = buffer.getInt();
-            namesCompressionLevel = buffer.getInt();
-            namesDeflatedSize = buffer.getInt();
-            namesInflatedSize = buffer.getInt();
+        archivedFiles = new HashMap<>(totalRecords);
 
-            buffer.position(recordsOffset);
+        recordsOffset = buffer.getInt();
+        recordsCompressionLevel = buffer.getInt();
+        recordsDeflatedSize = buffer.getInt();
+        namesCompressionLevel = buffer.getInt();
+        namesDeflatedSize = buffer.getInt();
+        namesInflatedSize = buffer.getInt();
 
-            final ByteBuffer recordData = ByteBuffer.allocate(RECORD_SIZE * totalRecords);
-            final ByteBuffer namesData = ByteBuffer.allocate(namesInflatedSize);
+        buffer.position(recordsOffset);
 
-            TreeFile.inflate(buffer, recordData, recordsCompressionLevel, recordsDeflatedSize);
-            TreeFile.inflate(buffer, namesData, namesCompressionLevel, namesDeflatedSize);
+        final ByteBuffer recordData = ByteBuffer.allocate(RECORD_SIZE * totalRecords);
+        final ByteBuffer namesData = ByteBuffer.allocate(namesInflatedSize);
 
-            final ByteBuffer checksumData = buffer.slice();
+        TreeFile.inflate(buffer, recordData, recordsCompressionLevel, recordsDeflatedSize);
+        TreeFile.inflate(buffer, namesData, namesCompressionLevel, namesDeflatedSize);
 
-            for (int i = 0; i < totalRecords; ++i) {
-                ByteBuffer data = recordData.order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer checksumData = buffer.slice();
 
-                final TreeRecordInfo record = new TreeRecordInfo();
-                record.checksum = data.getInt();
-                record.inflatedSize = data.getInt();
-                record.dataOffset = data.getInt();
-                record.compressionLevel = data.getInt();
-                record.deflatedSize = data.getInt();
-                record.nameOffset = data.getInt();
+        for (int i = 0; i < totalRecords; ++i) {
+            ByteBuffer data = recordData.order(ByteOrder.LITTLE_ENDIAN);
 
-                if (record.compressionLevel == 0)
-                    record.deflatedSize = record.inflatedSize;
+            final TreeRecordInfo record = new TreeRecordInfo();
+            record.checksum = data.getInt();
+            record.inflatedSize = data.getInt();
+            record.dataOffset = data.getInt();
+            record.compressionLevel = data.getInt();
+            record.deflatedSize = data.getInt();
+            record.nameOffset = data.getInt();
 
-                //Find the end of the string.
-                final StringBuilder stringBuilder = new StringBuilder();
-                namesData.position(record.nameOffset);
+            if (record.compressionLevel == 0)
+                record.deflatedSize = record.inflatedSize;
 
-                byte b = 0;
-                while ((b = namesData.get()) != 0)
-                    stringBuilder.append((char) b);
+            //Find the end of the string.
+            final StringBuilder stringBuilder = new StringBuilder();
+            namesData.position(record.nameOffset);
 
-                record.filePath = stringBuilder.toString();
-                checksumData.get(record.md5);
+            byte b = 0;
+            while ((b = namesData.get()) != 0)
+                stringBuilder.append((char) b);
 
-                archivedFiles.put(record.filePath, record);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            record.filePath = stringBuilder.toString();
+            checksumData.get(record.md5);
+
+            archivedFiles.put(record.filePath, record);
         }
     }
 

@@ -5,6 +5,8 @@ import com.jcraft.jzlib.ZStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -78,8 +80,15 @@ public class TreeFile {
     }
 
     @SuppressWarnings("unchecked")
-    public void addSearchTree(String filePath, int priority) {
-        nodes.add(new SearchTree(filePath, priority));
+    public void addSearchTree(String filePath, int priority) throws
+            FileNotFoundException,
+            IOException,
+            UnsupportedTreeFileException,
+            UnsupportedTreeFileVersionException {
+
+        SearchTree searchTree = new SearchTree(filePath, priority);
+        searchTree.preprocess();
+        nodes.add(searchTree);
         Collections.sort((ArrayList) nodes);
     }
 

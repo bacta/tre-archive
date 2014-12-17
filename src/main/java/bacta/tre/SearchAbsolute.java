@@ -7,7 +7,7 @@ import java.io.RandomAccessFile;
 /**
  * Created by crush on 3/20/14.
  */
-public final class SearchAbsolute extends SearchNode {
+final class SearchAbsolute extends SearchNode {
 
     private final String filePath;
 

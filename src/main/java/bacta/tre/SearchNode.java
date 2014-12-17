@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by crush on 3/19/14.
  */
-public abstract class SearchNode implements Comparable<SearchNode> {
+abstract class SearchNode implements Comparable<SearchNode> {
     protected static final Logger logger = LoggerFactory.getLogger(SearchNode.class);
 
     private final int searchPriority;

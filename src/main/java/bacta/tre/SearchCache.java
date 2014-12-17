@@ -3,7 +3,7 @@ package bacta.tre;
 /**
  * Created by crush on 3/20/14.
  */
-public class SearchCache extends SearchNode {
+class SearchCache extends SearchNode {
 
     //PersistentCrcString name
     //char* buffer
