@@ -1,13 +1,10 @@
 package bacta.tre;
 
-import com.jcraft.jzlib.JZlib;
-import com.jcraft.jzlib.ZStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -43,7 +40,7 @@ import java.util.*;
  * The data section comes after the file header section, and can be broken down into 4 blocks:
  * <ul>
  * <li><code>dataBlock</code> - This is the raw data of a file archived within this TreeFile.</li>
- * <li><code>recordBlock</code> - This is a {@link SearchTree.TreeRecordInfo}. It contains information about
+ * <li><code>recordBlock</code> - This is a {@link bacta.tre.SearchTree.TableOfContentsEntry}. It contains information about
  * each file contained within the archive.</li>
  * <li><code>namesBlock</code> - This is a block of ASCII names for each file. It contains the entire path of the file,
  * delimited by forward slash.</li>
@@ -53,7 +50,7 @@ import java.util.*;
  * </ul>
  * </p>
  * <p>
- * This TreeFile class only assembles and stashes the {@link SearchTree.TreeRecordInfo} information, with pointers to the data
+ * This TreeFile class only assembles and stashes the {@link bacta.tre.SearchTree.TableOfContentsEntry} information, with pointers to the data
  * for the referenced file. This allows the TreeFile to be parsed extremely quickly, a directory to be created, and
  * for individual files to be retrieved from the relevant archive when desired.
  * </p>
@@ -94,8 +91,12 @@ public class TreeFile {
 
     @SuppressWarnings("unchecked")
     public void addSearchTOC(String filePath, int priority) {
-        nodes.add(new SearchTOC(filePath, priority));
-        Collections.sort((ArrayList) nodes);
+        try {
+            nodes.add(new SearchTOC(filePath, priority));
+            Collections.sort((ArrayList) nodes);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -166,29 +167,5 @@ public class TreeFile {
         }
 
         return set;
-    }
-
-    public static void inflate(ByteBuffer buffer, ByteBuffer dst, int compressionLevel, int deflatedSize) {
-        byte[] src = new byte[deflatedSize];
-        buffer.get(src);
-
-        //TODO can we optimize this somehow?
-        if (compressionLevel == 0) {
-            dst.put(src);
-            dst.rewind();
-            return;
-        }
-
-        ZStream zstream = new ZStream();
-        zstream.avail_in = 0;
-        zstream.inflateInit();
-        zstream.next_in = src;
-        zstream.next_in_index = 0;
-        zstream.avail_in = src.length;
-        zstream.next_out = dst.array();
-        zstream.next_out_index = 0;
-        zstream.avail_out = dst.array().length;
-        zstream.inflate(JZlib.Z_FINISH);
-        zstream.inflateEnd();
     }
 }

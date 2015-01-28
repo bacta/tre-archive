@@ -38,15 +38,13 @@ import java.util.Set;
  * </code>
  */
 class SearchTree extends SearchNode {
-    private static final int RECORD_SIZE = 24;
-
     private final String filePath;
 
     public final String getFilePath() {
         return filePath;
     }
 
-    private Map<String, TreeRecordInfo> archivedFiles = new HashMap<>();
+    private Map<String, TableOfContentsEntry> tableOfContents = new HashMap<>();
 
     private int recordsOffset;
     private int recordsCompressionLevel;
@@ -93,7 +91,7 @@ class SearchTree extends SearchNode {
 
         final int totalRecords = buffer.getInt();
 
-        archivedFiles = new HashMap<>(totalRecords);
+        tableOfContents = new HashMap<>(totalRecords);
 
         recordsOffset = buffer.getInt();
         recordsCompressionLevel = buffer.getInt();
@@ -104,59 +102,64 @@ class SearchTree extends SearchNode {
 
         buffer.position(recordsOffset);
 
-        final ByteBuffer recordData = ByteBuffer.allocate(RECORD_SIZE * totalRecords);
+        final ByteBuffer recordData = ByteBuffer.allocate(TableOfContentsEntry.SIZE * totalRecords);
         final ByteBuffer namesData = ByteBuffer.allocate(namesInflatedSize);
 
-        TreeFile.inflate(buffer, recordData, recordsCompressionLevel, recordsDeflatedSize);
-        TreeFile.inflate(buffer, namesData, namesCompressionLevel, namesDeflatedSize);
+        TreeFileUtil.expand(buffer, recordData, recordsCompressionLevel, recordsDeflatedSize);
+        TreeFileUtil.expand(buffer, namesData, namesCompressionLevel, namesDeflatedSize);
 
         final ByteBuffer checksumData = buffer.slice();
+        final byte[] md5 = new byte[16];
 
         for (int i = 0; i < totalRecords; ++i) {
             ByteBuffer data = recordData.order(ByteOrder.LITTLE_ENDIAN);
 
-            final TreeRecordInfo record = new TreeRecordInfo();
-            record.checksum = data.getInt();
-            record.inflatedSize = data.getInt();
-            record.dataOffset = data.getInt();
-            record.compressionLevel = data.getInt();
-            record.deflatedSize = data.getInt();
-            record.nameOffset = data.getInt();
+            final TableOfContentsEntry entry = new TableOfContentsEntry();
+            entry.crc = data.getInt();
+            entry.length = data.getInt();
+            entry.offset = data.getInt();
+            entry.compressor = data.getInt();
+            entry.compressedLength = data.getInt();
+            entry.fileNameOffset = data.getInt();
 
-            if (record.compressionLevel == 0)
-                record.deflatedSize = record.inflatedSize;
+            if (entry.compressor == 0)
+                entry.compressedLength = entry.length;
 
             //Find the end of the string.
             final StringBuilder stringBuilder = new StringBuilder();
-            namesData.position(record.nameOffset);
+            namesData.position(entry.fileNameOffset);
 
             byte b = 0;
             while ((b = namesData.get()) != 0)
                 stringBuilder.append((char) b);
 
-            record.filePath = stringBuilder.toString();
-            checksumData.get(record.md5);
+            final String filename = stringBuilder.toString();
+            checksumData.get(md5);
 
-            archivedFiles.put(record.filePath, record);
+            //TODO: How do we use the md5 to check it? When and why?
+
+            tableOfContents.put(filename, entry);
         }
     }
 
     @Override
     public byte[] open(String filePath) {
-        final TreeRecordInfo record = archivedFiles.get(filePath);
+
+        final TableOfContentsEntry entry = tableOfContents.get(filePath);
+
         byte[] bytes = null;
 
-        if (record != null) {
+        if (entry != null) {
             ByteBuffer buffer = null;
 
             try {
                 RandomAccessFile file = new RandomAccessFile(this.filePath, "r");
                 FileChannel channel = file.getChannel();
-                MappedByteBuffer fileBuffer = channel.map(FileChannel.MapMode.READ_ONLY, record.dataOffset, record.deflatedSize);
+                MappedByteBuffer fileBuffer = channel.map(FileChannel.MapMode.READ_ONLY, entry.offset, entry.compressedLength);
 
-                buffer = ByteBuffer.allocate(record.inflatedSize);
+                buffer = ByteBuffer.allocate(entry.length);
 
-                TreeFile.inflate(fileBuffer, buffer, record.compressionLevel, record.deflatedSize);
+                TreeFileUtil.expand(fileBuffer, buffer, entry.compressor, entry.compressedLength);
 
                 bytes = buffer.array();
 
@@ -172,21 +175,34 @@ class SearchTree extends SearchNode {
 
     @Override
     public boolean exists(String filePath) {
-        return archivedFiles.containsKey(filePath);
+        return tableOfContents.containsKey(filePath);
     }
 
     public Set<String> listFiles() {
-        return archivedFiles.keySet();
+        return tableOfContents.keySet();
     }
 
-    private final class TreeRecordInfo {
-        public String filePath;
-        public int checksum;
-        public int compressionLevel;
-        public int deflatedSize;
-        public int inflatedSize;
-        public int nameOffset;
-        public int dataOffset;
-        public byte[] md5 = new byte[16];
+    public final class Header {
+        public static final int SIZE = 36;
+
+        public int token;
+        public int version;
+        public int numberOfFiles;
+        public int tocOffset;
+        public int tocCompressor;
+        public int sizeOfTOC;
+        public int blockCompressor;
+        public int sizeOfNameBlock;
+        public int uncompSizeOfNameBlock;
+    }
+
+    public final class TableOfContentsEntry {
+        public static final int SIZE = 24;
+        public int crc;
+        public int length;
+        public int offset;
+        public int compressor;
+        public int compressedLength;
+        public int fileNameOffset;
     }
 }
