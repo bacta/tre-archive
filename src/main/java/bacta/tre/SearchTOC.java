@@ -20,7 +20,12 @@ class SearchTOC extends SearchNode {
     private static final int ID_TOC = TreeFileUtil.makeId("TOC ");
     private static final int ID_0001 = TreeFileUtil.makeId("0001");
 
-    private static final Comparator<TableOfContentsEntry> tocComparator = (toc1, toc2) -> Integer.compare(toc1.crc, toc2.crc);
+    private static final Comparator<TableOfContentsEntry> tocComparator = new Comparator<TableOfContentsEntry>() {
+        @Override
+        public int compare(TableOfContentsEntry toc1, TableOfContentsEntry toc2) {
+            return Integer.compare(toc1.crc, toc2.crc);
+        }
+    };
 
     private final Path filePath;
 
