@@ -1,4 +1,4 @@
-package bacta.tre;
+package com.ocdsoft.bacta.tre;
 
 /**
  * Created by crush on 12/16/2014.

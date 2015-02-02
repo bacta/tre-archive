@@ -1,4 +1,4 @@
-package bacta.tre;
+package com.ocdsoft.bacta.tre;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

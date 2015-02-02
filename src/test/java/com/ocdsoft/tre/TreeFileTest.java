@@ -1,4 +1,4 @@
-package bacta.tre;
+package com.ocdsoft.tre;
 
 import org.junit.Assert;
 import org.junit.Rule;
