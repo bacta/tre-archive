@@ -70,6 +70,10 @@ public class TreeFile {
         return rootPath;
     }
 
+    public final void setRootPath(String rootPath) {
+         this.rootPath = rootPath;
+    }
+
     @SuppressWarnings("unchecked")
     public void addSearchPath(String filePath, int priority) {
         nodes.add(new SearchPath(filePath, priority));
