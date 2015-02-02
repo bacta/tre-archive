@@ -1,5 +1,8 @@
 package com.ocdsoft.tre;
 
+import com.ocdsoft.bacta.tre.TreeFile;
+import com.ocdsoft.bacta.tre.UnsupportedTreeFileException;
+import com.ocdsoft.bacta.tre.UnsupportedTreeFileVersionException;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
