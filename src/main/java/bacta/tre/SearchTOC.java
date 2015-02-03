@@ -109,16 +109,16 @@ class SearchTOC extends SearchNode {
         int index = indexOf(filePath);
 
         if (index != -1) {
-            TableOfContentsEntry entry = this.tableOfContents.get(index);
+            final TableOfContentsEntry entry = this.tableOfContents.get(index);
 
             try {
-                RandomAccessFile file = new RandomAccessFile(this.filePath.getParent().toString() + "/" + this.treeFileNames.get(entry.treeFileIndex), "r");
-                FileChannel channel = file.getChannel();
-                MappedByteBuffer fileBuffer = channel.map(FileChannel.MapMode.READ_ONLY, entry.offset, entry.compressedLength);
+                final RandomAccessFile file = new RandomAccessFile(this.filePath.getParent().toString() + "/" + this.treeFileNames.get(entry.treeFileIndex), "r");
+                final FileChannel channel = file.getChannel();
+                final MappedByteBuffer fileBuffer = channel.map(FileChannel.MapMode.READ_ONLY, entry.offset, entry.compressor != 0 ? entry.compressedLength : entry.length);
 
                 final ByteBuffer buffer = ByteBuffer.allocate(entry.length);
 
-                TreeFileUtil.expand(fileBuffer, buffer, entry.compressor, entry.compressedLength);
+                TreeFileUtil.expand(fileBuffer, buffer, entry.compressor, entry.compressor != 0 ? entry.compressedLength : entry.length);
 
                 bytes = buffer.array();
 

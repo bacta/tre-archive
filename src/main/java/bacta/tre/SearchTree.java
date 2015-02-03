@@ -11,32 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Created by crush on 3/19/14.
- * <p>
- * <code>
- * public class Header {
- * int token;
- * int version;
- * int numberOfFiles;
- * int tocOffset;
- * int tocCompressor;
- * int sizeOfTOC;
- * int blockCompressor;
- * int sizeOfNameBlock;
- * int uncompSizeOfNameBlock;
- * }
- * <p>
- * public class TableOfContentsEntry {
- * int crc;
- * int length;
- * int offset;
- * int compressor;
- * int compressedLength;
- * int fileNameOffset;
- * }
- * </code>
- */
 class SearchTree extends SearchNode {
     private final String filePath;
 
@@ -60,7 +34,6 @@ class SearchTree extends SearchNode {
     }
 
     public final void preprocess() throws
-            FileNotFoundException,
             IOException,
             UnsupportedTreeFileException,
             UnsupportedTreeFileVersionException {
