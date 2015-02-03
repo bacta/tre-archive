@@ -1,4 +1,4 @@
-package bacta.tre;
+package com.ocdsoft.bacta.tre;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ import java.util.*;
  * The data section comes after the file header section, and can be broken down into 4 blocks:
  * <ul>
  * <li><code>dataBlock</code> - This is the raw data of a file archived within this TreeFile.</li>
- * <li><code>recordBlock</code> - This is a {@link bacta.tre.SearchTree.TableOfContentsEntry}. It contains information about
+ * <li><code>recordBlock</code> - This is a {@link com.ocdsoft.tre.SearchTree.TableOfContentsEntry}. It contains information about
  * each file contained within the archive.</li>
  * <li><code>namesBlock</code> - This is a block of ASCII names for each file. It contains the entire path of the file,
  * delimited by forward slash.</li>
@@ -50,7 +50,7 @@ import java.util.*;
  * </ul>
  * </p>
  * <p>
- * This TreeFile class only assembles and stashes the {@link bacta.tre.SearchTree.TableOfContentsEntry} information, with pointers to the data
+ * This TreeFile class only assembles and stashes the {@link com.ocdsoft.tre.SearchTree.TableOfContentsEntry} information, with pointers to the data
  * for the referenced file. This allows the TreeFile to be parsed extremely quickly, a directory to be created, and
  * for individual files to be retrieved from the relevant archive when desired.
  * </p>
@@ -68,6 +68,10 @@ public class TreeFile {
 
     public final String getRootPath() {
         return rootPath;
+    }
+
+    public final void setRootPath(String rootPath) {
+         this.rootPath = rootPath;
     }
 
     @SuppressWarnings("unchecked")

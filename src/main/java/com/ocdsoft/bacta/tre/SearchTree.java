@@ -1,4 +1,4 @@
-package bacta.tre;
+package com.ocdsoft.bacta.tre;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

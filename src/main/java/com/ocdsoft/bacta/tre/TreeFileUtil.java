@@ -1,4 +1,4 @@
-package bacta.tre;
+package com.ocdsoft.bacta.tre;
 
 import com.jcraft.jzlib.JZlib;
 import com.jcraft.jzlib.ZStream;
