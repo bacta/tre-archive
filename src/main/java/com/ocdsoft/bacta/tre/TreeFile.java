@@ -1,5 +1,6 @@
 package com.ocdsoft.bacta.tre;
 
+import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,7 @@ import java.util.*;
  * </p>
  */
 @SuppressWarnings("deprecation")
+@Singleton
 public class TreeFile {
     public static final int ID_TREE = 0x54524545; //'TREE'
     public static final int ID_0005 = 0x30303035; //'0005'
