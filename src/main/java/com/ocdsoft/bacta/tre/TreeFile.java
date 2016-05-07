@@ -4,7 +4,6 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
@@ -14,47 +13,6 @@ import java.util.*;
  * A Tree Archive (*.tre) is an archive format seen in Star Wars Galaxies, and potentially other games. It is unknown
  * if this is an SOE proprietary format, or a common format with little, to no documentation available to the public
  * domain.
- * </p>
- * <h3>File Structure</h3>
- * <p>
- * TreeFile's contain Zlib compressed files in the following archive format.
- * <pre>
- * TreeFile:Header {
- *     INT32 fileId
- *     INT32 version
- *     INT32 totalRecords
- *     INT32 recordsOffset
- *     INT32 recordsCompressionLevel
- *     INT32 recordsDeflatedSize
- *     INT32 namesCompressionLevel
- *     INT32 namesDeflatedSize
- *     INT32 namesInflatedSize
- * }
- *
- * TreeFile:Data {
- *     BYTE[] dataBlock
- *     BYTE[] recordBlock
- *     BYTE[] namesBlock
- *     BYTE[] checksumBlock
- * }
- * </pre>
- * The data section comes after the file header section, and can be broken down into 4 blocks:
- * <ul>
- * <li><code>dataBlock</code> - This is the raw data of a file archived within this TreeFile.</li>
- * <li><code>recordBlock</code> - This is a {@link com.ocdsoft.tre.SearchTree.TableOfContentsEntry}. It contains information about
- * each file contained within the archive.</li>
- * <li><code>namesBlock</code> - This is a block of ASCII names for each file. It contains the entire path of the file,
- * delimited by forward slash.</li>
- * <li><code>checksumBlock</code> - This is a block of MD5 checksums, used to validate the integrity of the data in this
- * archive, linked to each file. This is used in the file scan portion of the SOE launcher to see if TREE data
- * should be retrieved.
- * </ul>
- * </p>
- * <p>
- * This TreeFile class only assembles and stashes the {@link com.ocdsoft.tre.SearchTree.TableOfContentsEntry} information, with pointers to the data
- * for the referenced file. This allows the TreeFile to be parsed extremely quickly, a directory to be created, and
- * for individual files to be retrieved from the relevant archive when desired.
- * </p>
  */
 @SuppressWarnings("deprecation")
 @Singleton
@@ -63,7 +21,8 @@ public class TreeFile {
     public static final int ID_0005 = 0x30303035; //'0005'
     public static final int ID_0006 = 0x30303036; //'0006'
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger LOGGER = LoggerFactory.getLogger(TreeFile.class);
+
     private final Collection<SearchNode> nodes = new ArrayList<>();
 
     private String rootPath;
@@ -77,14 +36,13 @@ public class TreeFile {
     }
 
     @SuppressWarnings("unchecked")
-    public void addSearchPath(String filePath, int priority) {
-        nodes.add(new SearchPath(filePath, priority));
+    public void addSearchPath(final String filePath, int priority) {
+        nodes.add(new SearchPath(priority, filePath));
         Collections.sort((ArrayList) nodes);
     }
 
     @SuppressWarnings("unchecked")
     public void addSearchTree(String filePath, int priority) throws
-            FileNotFoundException,
             IOException,
             UnsupportedTreeFileException,
             UnsupportedTreeFileVersionException {
